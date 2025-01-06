@@ -1,5 +1,6 @@
 const express = require("express");
-const routers = require("./routes/farmRoute");
+const FarmRouter = require("./routes/farm-route");
+const AuthenRouter = require("./routes/authen-route");
 const swaggerUi = require("swagger-ui-express");
 const swaggerSpecs = require("./swaggerConfig");
 const app = express();
@@ -15,7 +16,8 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
-app.use("/", routers);
+app.use("/", FarmRouter);
+app.use("/", AuthenRouter);
 
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);

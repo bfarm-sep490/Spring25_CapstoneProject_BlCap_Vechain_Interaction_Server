@@ -1,23 +1,36 @@
 const swaggerJsdoc = require("swagger-jsdoc");
 
 const options = {
-  definition: {
+  swaggerDefinition: {
     openapi: "3.0.0",
     info: {
-      title: "VeChain API",
+      title: "Vechain Interaction Server",
       version: "1.0.0",
-      description: "API documentation for VeChain interactions",
+      description: "API documentation with Vechain Interaction for Swagger",
     },
     servers: [
       {
         url: "http://localhost:3000",
-        description: "Local server",
+        description: "Development Server",
+      },
+    ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: "http",
+          scheme: "bearer",
+          bearerFormat: "JWT",
+        },
+      },
+    },
+    security: [
+      {
+        bearerAuth: [],
       },
     ],
   },
-  apis: ["./routes/*.js"], // Path to route files for Swagger annotations
+  apis: ["./routes/*.js"],
 };
-
 const swaggerSpecs = swaggerJsdoc(options);
 
 module.exports = swaggerSpecs;

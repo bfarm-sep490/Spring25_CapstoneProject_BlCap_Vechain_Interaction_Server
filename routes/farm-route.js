@@ -3,7 +3,8 @@ const {
   createTransaction,
   getBlockByTxId,
   decodeFarmData,
-} = require("../controllers/FarmController");
+} = require("../controllers/farm-controller");
+const jwtAuthMiddleware = require("../middlewares/jwt-middleware");
 
 const router = express.Router();
 
@@ -34,10 +35,6 @@ const router = express.Router();
  *                 type: string
  *                 description: Certifications or qualifications of the farm
  *                 example: "Organic, FDA Approved"
- *               isActive:
- *                 type: boolean
- *                 description: Indicates whether the farm is active
- *                 example: true
  *     responses:
  *       200:
  *         description: Transaction successfully created
@@ -46,7 +43,7 @@ const router = express.Router();
  *             schema:
  *               type: object
  *               properties:
- *                 success:
+ *                 status:
  *                   type: integer
  *                   description: HTTP status code
  *                   example: 200
@@ -65,7 +62,7 @@ const router = express.Router();
  *             schema:
  *               type: object
  *               properties:
- *                 success:
+ *                 status:
  *                   type: integer
  *                   description: HTTP status code
  *                   example: 500
@@ -79,12 +76,12 @@ const router = express.Router();
  *                   example: "Insufficient funds to cover gas fees"
  */
 
-router.post("/vechain/farm/register", async (req, res) => {
+router.post("/vechain/farm/register", jwtAuthMiddleware, async (req, res) => {
   try {
     const result = await createTransaction(req, res);
 
     res.status(200).json({
-      success: 200,
+      status: 200,
       message: result.message || "Transaction submitted successfully",
       txId: result.txId || null,
     });
@@ -92,7 +89,7 @@ router.post("/vechain/farm/register", async (req, res) => {
     console.error("Error in /vechain/farm-register:", error);
 
     res.status(500).json({
-      success: 500,
+      status: 500,
       message: "Transaction failed",
       error: error.message,
     });
@@ -122,7 +119,7 @@ router.post("/vechain/farm/register", async (req, res) => {
  *             schema:
  *               type: object
  *               properties:
- *                 success:
+ *                 status:
  *                   type: integer
  *                   description: HTTP status code
  *                   example: 200
@@ -130,10 +127,10 @@ router.post("/vechain/farm/register", async (req, res) => {
  *                   type: string
  *                   description: Success message
  *                   example: "Transaction submitted"
- *                 txId:
- *                   type: string
- *                   description: The ID of the transaction on the VeChain blockchain
- *                   example: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+ *                 data:
+ *                   type: object
+ *                   description: object containing farm data
+ *
  *       400:
  *         description: Bad request - Invalid ID
  *         content:
@@ -141,7 +138,7 @@ router.post("/vechain/farm/register", async (req, res) => {
  *             schema:
  *               type: object
  *               properties:
- *                 success:
+ *                 status:
  *                   type: integer
  *                   description: HTTP status code
  *                   example: 400
@@ -156,7 +153,7 @@ router.post("/vechain/farm/register", async (req, res) => {
  *             schema:
  *               type: object
  *               properties:
- *                 success:
+ *                 status:
  *                   type: integer
  *                   description: HTTP status code
  *                   example: 500
@@ -175,7 +172,7 @@ router.get("/vechain/farm/:id", async (req, res) => {
     const txId = req.params.id;
     const result = await decodeFarmData(req, res);
     res.status(200).json({
-      success: 200,
+      status: 200,
       message: result?.message || "Transaction gotten successfully",
       data: result?.data || null,
     });
@@ -183,7 +180,7 @@ router.get("/vechain/farm/:id", async (req, res) => {
     console.error("Error in /vechain/farm/:id", error);
 
     res.status(500).json({
-      success: 500,
+      status: 500,
       message: "Transaction gotten failed",
       error: error.message,
     });
@@ -213,7 +210,7 @@ router.get("/vechain/farm/:id", async (req, res) => {
  *             schema:
  *               type: object
  *               properties:
- *                 success:
+ *                 status:
  *                   type: integer
  *                   description: HTTP status code
  *                   example: 200
@@ -221,10 +218,9 @@ router.get("/vechain/farm/:id", async (req, res) => {
  *                   type: string
  *                   description: Success message
  *                   example: "Transaction submitted"
- *                 txId:
- *                   type: string
- *                   description: The ID of the transaction on the VeChain blockchain
- *                   example: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+ *                 data:
+ *                   type: object
+ *                   description: object containing transaction and block data
  *       400:
  *         description: Bad request - Invalid ID
  *         content:
@@ -232,7 +228,7 @@ router.get("/vechain/farm/:id", async (req, res) => {
  *             schema:
  *               type: object
  *               properties:
- *                 success:
+ *                 status:
  *                   type: integer
  *                   description: HTTP status code
  *                   example: 400
@@ -247,7 +243,7 @@ router.get("/vechain/farm/:id", async (req, res) => {
  *             schema:
  *               type: object
  *               properties:
- *                 success:
+ *                 status:
  *                   type: integer
  *                   description: HTTP status code
  *                   example: 500
@@ -265,7 +261,7 @@ router.get("/vechain/transaction/:id", async (req, res) => {
     const txId = req.params.id;
     const result = await getBlockByTxId(req, res);
     res.status(200).json({
-      success: 200,
+      status: 200,
       message: result?.message || "Transaction gotten successfully",
       data: result?.data || null,
     });
@@ -273,7 +269,7 @@ router.get("/vechain/transaction/:id", async (req, res) => {
     console.error("Error in /vechain/farm/:id", error);
 
     res.status(500).json({
-      success: 500,
+      status: 500,
       message: "Transaction gotten failed",
       error: error.message,
     });

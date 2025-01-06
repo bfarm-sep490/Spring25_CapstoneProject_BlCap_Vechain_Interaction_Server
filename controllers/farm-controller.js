@@ -1,8 +1,8 @@
 const { ethers } = require("ethers");
-const { Transaction, secp256k1 } = require("thor-devkit");
+const { Transaction, cry } = require("thor-devkit");
 const bent = require("bent");
 
-const { address, abi } = require("../helper/contract.js");
+const { address, abi } = require("../models/farm-contract");
 
 async function createTransaction(req, res) {
   const { name, location, certifications } = req.body;
@@ -18,7 +18,7 @@ async function createTransaction(req, res) {
 
   // Tạo nên engine gọi hàm của smart contract
   // Tạo interface từ abi của smart contract
-  const { Interface } = ethers.utils;
+  const { Interface } = ethers;
   const Counter = new Interface(abi);
   // Tạo data để gọi hàm registerFarm của smart contract (Tạo nội dung của cuộc "giao dịch" )
   const encodedData = Counter.encodeFunctionData("registerFarm", [
@@ -105,7 +105,7 @@ async function createTransaction(req, res) {
   // Tạo chữ kí nngười dùng. Ở đây là máy chủ hiện tại.
   const signingHash = transaction.signingHash(); // Lấy mã hash của giao dịch. mã hash này sẽ được làm nhiên liệu để sinh chữ kí của người dùng.
   // Lấy chữ kí từ người dùng.
-  const originSignature = secp256k1.sign(
+  const originSignature = cry.secp256k1.sign(
     signingHash, // Mã hash của giao dịch
     Buffer.from(wallet.privateKey.slice(2), "hex") // chuyển đổi key wallet người dùng. Ở đây là máy chủ server từ hex sang buffer
   ); //originSignature là chữ kí người dùng đồng ý giao dịch.
@@ -120,11 +120,13 @@ async function createTransaction(req, res) {
   console.log("Submitted with txId", id);
 
   return {
-    success: 200,
+    status: 200,
     message: "Transaction submitted",
     txId: id,
   };
 }
+
+// Hàm lấy thông tin block và transactioon thông tin từ Vechain bằng transaction txId xuống.
 async function getBlockByTxId(req, res) {
   const txId = req.params.id;
   const baseUrl = `${process.env.API_BASE_URL}`;
@@ -133,14 +135,11 @@ async function getBlockByTxId(req, res) {
 
   try {
     const transactionDetails = await get(`${baseUrl}/transactions/${txId}`);
-
-    console.log("Transaction Details:", transactionDetails);
     const blockId = transactionDetails.meta.blockID;
-
     const blockDetails = await get(`${baseUrl}/blocks/${blockId}`);
-    console.log("Block Details:", blockDetails);
+
     return {
-      success: true,
+      status: 200,
       message: "Block information fetched successfully",
       data: {
         blockDetails,
@@ -150,13 +149,14 @@ async function getBlockByTxId(req, res) {
   } catch (error) {
     console.error("Error fetching block information:", error);
     return {
-      success: false,
+      status: 500,
       message: "Unable to fetch block information",
       error: error.message,
     };
   }
 }
 
+// Hàm decode thông tin farm từ function registerFarm từ Vechain xuống bằng transaction txId.
 const decodeFarmData = async (req, res) => {
   const txId = req.params.id;
   const baseUrl = `${process.env.API_BASE_URL}`;
@@ -179,14 +179,14 @@ const decodeFarmData = async (req, res) => {
     };
 
     return {
-      success: 200,
+      status: 200,
       message: "Farm data decoded successfully",
       data: farmInfo,
     };
   } catch (error) {
     console.error("Error decoding farm data:", error.message);
     return {
-      success: false,
+      status: 500,
       message: "Unable to decode farm data",
       error: error.message,
     };
