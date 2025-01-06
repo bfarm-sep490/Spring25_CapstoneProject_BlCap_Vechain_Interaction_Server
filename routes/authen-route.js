@@ -33,7 +33,7 @@ const router = express.Router();
  *               properties:
  *                 status:
  *                   type: integer
- *                   description: HTTP status code
+ *                   description: HTTPS status code
  *                   example: 200
  *                 message:
  *                   type: string
@@ -51,7 +51,7 @@ const router = express.Router();
  *               properties:
  *                 success:
  *                   type: integer
- *                   description: HTTP status code
+ *                   description: HTTPSS status code
  *                 message:
  *                   type: string
  *                   description: Error message

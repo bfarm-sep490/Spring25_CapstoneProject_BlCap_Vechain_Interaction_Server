@@ -10,14 +10,14 @@ const options = {
     },
     servers: [
       {
-        url: "https://ve-api.outfit4rent.online",
+        url: "http://localhost:3000",
         description: "Development Server",
       },
     ],
     components: {
       securitySchemes: {
         bearerAuth: {
-          type: "https",
+          type: "http",
           scheme: "bearer",
           bearerFormat: "JWT",
         },
@@ -31,6 +31,7 @@ const options = {
   },
   apis: ["./routes/*.js"],
 };
+
 const swaggerSpecs = swaggerJsdoc(options);
 
 module.exports = swaggerSpecs;
