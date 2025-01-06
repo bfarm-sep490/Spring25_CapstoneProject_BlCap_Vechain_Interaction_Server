@@ -1,0 +1,53 @@
+# Node.js dependencies
+node_modules/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data
+pids
+*.pid
+*.pid.lock
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Dependency directories
+jspm_packages/
+
+# Build output
+dist/
+build/
+
+# IDE and editor-specific files
+.vscode/
+.idea/
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+
+# Optional npm cache directory
+.npm/
+
+# Optional REPL history
+.node_repl_history
+
+# Miscellaneous
+*.swp
+*.bak
+*.tmp
+*.temp
+*.~undo-tree~
+*.orig
+*.patch
+
+# Specific files for deployments or secret configurations
+*.key
+*.pem
+.env
