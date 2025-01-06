@@ -12,6 +12,7 @@ const corsOptions = {
   methods: "*",
   allowedHeaders: "*",
 };
+app.set("trust proxy", true); 
 app.use(cors(corsOptions));
 app.use(express.json());
 dotenv.config();
