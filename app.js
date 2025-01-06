@@ -7,8 +7,12 @@ const app = express();
 const cors = require("cors");
 const dotenv = require("dotenv");
 const PORT = 3000;
-
-app.use(cors());
+const corsOptions = {
+  origin: "*",
+  methods: "*",
+  allowedHeaders: "*",
+};
+app.use(cors(corsOptions));
 app.use(express.json());
 dotenv.config();
 app.get("/", (req, res) => {
