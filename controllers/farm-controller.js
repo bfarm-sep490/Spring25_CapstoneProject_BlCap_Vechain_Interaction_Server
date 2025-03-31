@@ -5,12 +5,24 @@ const bent = require("bent");
 const { address, abi } = require("../models/farm-contract");
 
 async function createTransaction(req, res) {
-  const { name, location, certifications } = req.body;
-
+  const {
+    plant_id,
+    yield_id,
+    expert_id,
+    plan_name,
+    start_date,
+    end_date,
+    estimated_product,
+    qr_code,
+  } = req.body;
   // Thiết lập engine gọi http request để giao tiếp với Vechaine
-  const get = bent("GET", `${process.env.API_BASE_URL}`, "json");
-  const post = bent("POST", `${process.env.API_BASE_URL}`, "json");
-  const getSponsorship = bent("POST", `${process.env.API_SPONSOR_URL}`, "json");
+  const get = bent("GET", "https://testnet.veblocks.net", "json");
+  const post = bent("POST", "https://testnet.veblocks.net", "json");
+  const getSponsorship = bent(
+    "POST",
+    "https://sponsor-testnet.vechain.energy",
+    "json"
+  );
 
   // Tạo một ví ngẫu nhiên hoặc có thể sử dụng ví của server
   // hoặc sử dụng  ví của người dùng (tùy use case phát triển)
@@ -21,11 +33,15 @@ async function createTransaction(req, res) {
   const { Interface } = ethers;
   const Counter = new Interface(abi);
   // Tạo data để gọi hàm registerFarm của smart contract (Tạo nội dung của cuộc "giao dịch" )
-  const encodedData = Counter.encodeFunctionData("registerFarm", [
-    wallet.address,
-    name,
-    location,
-    certifications.split(",").map((cert) => cert.trim()),
+  const encodedData = Counter.encodeFunctionData("createPlan", [
+    plant_id,
+    yield_id, // uint256 for yield_id
+    expert_id, // uint256 for expert_id
+    plan_name, // string for plan_name
+    start_date, // uint256 for start_date
+    end_date, // uint256 for end_date (convert directly to BigInteger)
+    estimated_product, // uint256 for estimated_product
+    qr_code,
   ]);
 
   // Tạo clause để gọi hàm registerFarm của smart contract (Tạo nội dung của cuộc "giao dịch" )
@@ -95,7 +111,7 @@ async function createTransaction(req, res) {
 
   //Đây là API lấy chữ kí của "nhà tài trợ" cho giao dịch.
   //Ở đây là máy chủ server của dự án
-  const { signature } = await getSponsorship(`/by/${process.env.ID_SPONSOR}`, {
+  const { signature } = await getSponsorship(`/by/819`, {
     origin: wallet.address, // thay bằng ví của người dùng. Ở đây có thể thay thế ví của máy chủ để quản lí giao dịch.
     raw: `0x${transaction.encode().toString("hex")}`, // Giao dịch đã mã hóa. Bản giao dịch sẽ được gửi đến cho "nhà tài trợ" ký
   });
@@ -129,10 +145,10 @@ async function createTransaction(req, res) {
 // Hàm lấy thông tin block và transactioon thông tin từ Vechain bằng transaction txId xuống.
 async function getBlockByTxId(req, res) {
   const txId = req.params.id;
-  const baseUrl = `${process.env.API_BASE_URL}`;
+  const baseUrl = `https://testnet.veblocks.net`;
 
   const get = bent("GET", "json");
-
+  console.log("AAAAs");
   try {
     const transactionDetails = await get(`${baseUrl}/transactions/${txId}`);
     const blockId = transactionDetails.meta.blockID;
@@ -159,23 +175,27 @@ async function getBlockByTxId(req, res) {
 // Hàm decode thông tin farm từ function registerFarm từ Vechain xuống bằng transaction txId.
 const decodeFarmData = async (req, res) => {
   const txId = req.params.id;
-  const baseUrl = `${process.env.API_BASE_URL}`;
+  const baseUrl = `https://testnet.veblocks.net`;
   const get = bent("GET", "json");
 
   try {
     const transactionDetails = await get(`${baseUrl}/transactions/${txId}`);
 
     const { data } = transactionDetails.clauses[0];
-
-    const { Interface } = ethers.utils;
+    const { Interface } = ethers;
     const iface = new Interface(abi);
-    const decodedData = iface.decodeFunctionData("registerFarm", data);
+    console.log("Data from transaction:");
+
+    const decodedData = iface.decodeFunctionData("createPlan", data);
+    console.log(decodedData);
 
     const farmInfo = {
-      owner: decodedData.owner,
-      name: decodedData.name,
-      location: decodedData.location,
-      certifications: decodedData.certifications,
+      yield_id: decodedData.yield_id.toString(),
+      expert_id: decodedData.expert_id.toString(),
+      plan_name: decodedData.plan_name,
+      start_date: decodedData.start_date.toString(),
+      end_date: decodedData.end_date.toString(),
+      estimated_product: decodedData.estimated_product.toString(),
     };
 
     return {

@@ -7,20 +7,13 @@ const app = express();
 const cors = require("cors");
 const dotenv = require("dotenv");
 const PORT = 3000;
-const corsOptions = {
-  origin: "*",
-  methods: "*",
-  allowedHeaders: "*",
-};
-app.set("trust proxy", true);
-app.use(cors(corsOptions));
+app.use(cors());
 app.use(express.json());
 dotenv.config();
 app.get("/", (req, res) => {
   res.send("Hello, World! This is my Node.js server!");
 });
 
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
 app.use("/", FarmRouter);
 app.use("/", AuthenRouter);
 

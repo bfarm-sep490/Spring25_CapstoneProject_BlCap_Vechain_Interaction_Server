@@ -1,53 +1,68 @@
-const address = "0xe4aEB5A23E83996E70BF5f46Dbc027a5C410b686";
+const address = "0x29C4A96225D5AFD91D0FA44973e933eaf1cFcE91";
 const abi = [
   {
-    inputs: [
-      {
-        internalType: "address",
-        name: "_productRegistryAddress",
-        type: "address",
-      },
-    ],
-    stateMutability: "nonpayable",
-    type: "constructor",
-  },
-  {
     anonymous: false,
     inputs: [
       {
         indexed: true,
         internalType: "uint256",
-        name: "farmId",
-        type: "uint256",
-      },
-      {
-        indexed: true,
-        internalType: "address",
-        name: "owner",
-        type: "address",
-      },
-    ],
-    name: "FarmRegistered",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: true,
-        internalType: "uint256",
-        name: "farmId",
+        name: "id",
         type: "uint256",
       },
       {
         indexed: false,
-        internalType: "bool",
-        name: "isActive",
-        type: "bool",
+        internalType: "string",
+        name: "plan_name",
+        type: "string",
       },
     ],
-    name: "FarmStatusUpdated",
+    name: "PlanCreated",
     type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "uint256",
+        name: "id",
+        type: "uint256",
+      },
+    ],
+    name: "PlanUpdated",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "uint256",
+        name: "plan_id",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "string",
+        name: "task_type",
+        type: "string",
+      },
+    ],
+    name: "TaskSummaryUpdated",
+    type: "event",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "plan_id",
+        type: "uint256",
+      },
+    ],
+    name: "approvePlan",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
   },
   {
     inputs: [
@@ -57,27 +72,27 @@ const abi = [
         type: "uint256",
       },
     ],
-    name: "farms",
+    name: "caring_task_summaries",
     outputs: [
       {
-        internalType: "address",
-        name: "owner",
-        type: "address",
+        internalType: "uint256",
+        name: "plan_id",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "total_tasks",
+        type: "uint256",
       },
       {
         internalType: "string",
-        name: "name",
+        name: "overall_status",
         type: "string",
       },
       {
-        internalType: "string",
-        name: "location",
-        type: "string",
-      },
-      {
-        internalType: "bool",
-        name: "isActive",
-        type: "bool",
+        internalType: "uint256",
+        name: "last_updated",
+        type: "uint256",
       },
     ],
     stateMutability: "view",
@@ -87,41 +102,140 @@ const abi = [
     inputs: [
       {
         internalType: "uint256",
-        name: "farmId",
+        name: "plant_id",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "yield_id",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "expert_id",
+        type: "uint256",
+      },
+      {
+        internalType: "string",
+        name: "plan_name",
+        type: "string",
+      },
+      {
+        internalType: "uint256",
+        name: "start_date",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "end_date",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "estimated_product",
+        type: "uint256",
+      },
+      {
+        internalType: "string",
+        name: "qr_code",
+        type: "string",
+      },
+    ],
+    name: "createPlan",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
         type: "uint256",
       },
     ],
-    name: "getFarmInfo",
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "plan_id",
+        type: "uint256",
+      },
+    ],
+    name: "getPlan",
     outputs: [
       {
         components: [
           {
-            internalType: "address",
-            name: "owner",
-            type: "address",
+            internalType: "uint256",
+            name: "id",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "plant_id",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "yield_id",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "expert_id",
+            type: "uint256",
           },
           {
             internalType: "string",
-            name: "name",
+            name: "plan_name",
             type: "string",
+          },
+          {
+            internalType: "uint256",
+            name: "start_date",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "end_date",
+            type: "uint256",
           },
           {
             internalType: "string",
-            name: "location",
+            name: "status",
             type: "string",
           },
           {
-            internalType: "string[]",
-            name: "certifications",
-            type: "string[]",
+            internalType: "uint256",
+            name: "estimated_product",
+            type: "uint256",
+          },
+          {
+            internalType: "string",
+            name: "qr_code",
+            type: "string",
           },
           {
             internalType: "bool",
-            name: "isActive",
+            name: "is_approved",
             type: "bool",
           },
+          {
+            internalType: "uint256",
+            name: "caring_task_count",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "harvesting_task_count",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "packaging_task_count",
+            type: "uint256",
+          },
         ],
-        internalType: "struct FarmRegistry.Farm",
+        internalType: "struct IPlanManagement.Plan",
         name: "",
         type: "tuple",
       },
@@ -130,26 +244,39 @@ const abi = [
     type: "function",
   },
   {
-    inputs: [],
-    name: "nextFarmId",
-    outputs: [
+    inputs: [
       {
         internalType: "uint256",
         name: "",
         type: "uint256",
       },
     ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "productRegistry",
+    name: "harvesting_task_summaries",
     outputs: [
       {
-        internalType: "contract IProductRegistry",
-        name: "",
-        type: "address",
+        internalType: "uint256",
+        name: "plan_id",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "total_tasks",
+        type: "uint256",
+      },
+      {
+        internalType: "string",
+        name: "overall_status",
+        type: "string",
+      },
+      {
+        internalType: "uint256",
+        name: "total_harvested_quantity",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "last_updated",
+        type: "uint256",
       },
     ],
     stateMutability: "view",
@@ -158,51 +285,56 @@ const abi = [
   {
     inputs: [
       {
-        internalType: "address",
-        name: "owner",
-        type: "address",
-      },
-      {
-        internalType: "string",
-        name: "name",
-        type: "string",
-      },
-      {
-        internalType: "string",
-        name: "location",
-        type: "string",
-      },
-      {
-        internalType: "string[]",
-        name: "certifications",
-        type: "string[]",
-      },
-    ],
-    name: "registerFarm",
-    outputs: [
-      {
         internalType: "uint256",
         name: "",
         type: "uint256",
       },
     ],
-    stateMutability: "nonpayable",
+    name: "packaging_task_summaries",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "plan_id",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "total_tasks",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "total_packed_quantity",
+        type: "uint256",
+      },
+      {
+        internalType: "string",
+        name: "overall_status",
+        type: "string",
+      },
+      {
+        internalType: "uint256",
+        name: "last_updated",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
     type: "function",
   },
   {
     inputs: [
       {
         internalType: "uint256",
-        name: "farmId",
+        name: "plan_id",
         type: "uint256",
       },
       {
-        internalType: "bool",
-        name: "isActive",
-        type: "bool",
+        internalType: "string",
+        name: "status",
+        type: "string",
       },
     ],
-    name: "updateFarmStatus",
+    name: "updatePlanStatus",
     outputs: [],
     stateMutability: "nonpayable",
     type: "function",
