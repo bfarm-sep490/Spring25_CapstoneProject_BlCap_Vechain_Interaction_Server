@@ -1,5 +1,6 @@
 const express = require("express");
 const {
+  deployContract,
   createTransaction,
   getBlockByTxId,
   decodeFarmData,
@@ -56,6 +57,25 @@ router.get("/vechain/transaction/:id", async (req, res) => {
       status: 200,
       message: result?.message || "Transaction gotten successfully",
       data: result?.data || null,
+    });
+  } catch (error) {
+    console.error("Error in /vechain/farm/:id", error);
+
+    res.status(500).json({
+      status: 500,
+      message: "Transaction gotten failed",
+      error: error.message,
+    });
+  }
+});
+
+router.get("/vechain/deploy", async (req, res) => {
+  try {
+    const result = await deployContract();
+    res.status(200).json({
+      status: 200,
+      message: result?.message || "Transaction gotten successfully",
+      data: result?.contractAddress || null,
     });
   } catch (error) {
     console.error("Error in /vechain/farm/:id", error);

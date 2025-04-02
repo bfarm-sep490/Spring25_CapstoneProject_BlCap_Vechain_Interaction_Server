@@ -2,19 +2,15 @@ const { ethers } = require("ethers");
 const { Transaction, cry } = require("thor-devkit");
 const bent = require("bent");
 
-const { address, abi } = require("../models/farm-contract");
+const { address, abi, bytecode } = require("../models/farm-contract");
+const {
+  ThorClient,
+  VeChainProvider,
+  ProviderInternalBaseWallet,
+} = require("@vechain/sdk-network");
+const { HexUInt } = require("@vechain/sdk-core");
 
 async function createTransaction(req, res) {
-  const {
-    plant_id,
-    yield_id,
-    expert_id,
-    plan_name,
-    start_date,
-    end_date,
-    estimated_product,
-    qr_code,
-  } = req.body;
   // Thiết lập engine gọi http request để giao tiếp với Vechaine
   const get = bent("GET", "https://testnet.veblocks.net", "json");
   const post = bent("POST", "https://testnet.veblocks.net", "json");
@@ -34,14 +30,14 @@ async function createTransaction(req, res) {
   const Counter = new Interface(abi);
   // Tạo data để gọi hàm registerFarm của smart contract (Tạo nội dung của cuộc "giao dịch" )
   const encodedData = Counter.encodeFunctionData("createPlan", [
-    plant_id,
-    yield_id, // uint256 for yield_id
-    expert_id, // uint256 for expert_id
-    plan_name, // string for plan_name
-    start_date, // uint256 for start_date
-    end_date, // uint256 for end_date (convert directly to BigInteger)
-    estimated_product, // uint256 for estimated_product
-    qr_code,
+    1,
+    1, // uint256 for yield_id
+    1, // uint256 for expert_id
+    "1", // string for plan_name
+    1, // uint256 for start_date
+    1, // uint256 for end_date (convert directly to BigInteger)
+    1, // uint256 for estimated_product
+    "1",
   ]);
 
   // Tạo clause để gọi hàm registerFarm của smart contract (Tạo nội dung của cuộc "giao dịch" )
@@ -56,6 +52,8 @@ async function createTransaction(req, res) {
   // Lấy thông tin block mới nhất và block genesis
   const bestBlock = await get("/blocks/best"); // Lấy thông tin của block mới nhất trên mạng testnet của Vechain
   const genesisBlock = await get("/blocks/0"); // Lấy thông tin của block đầu tiên trên mạng testnet của Vechain
+  console.log("Best block:", Number.parseInt(genesisBlock.id.slice(-2), 16));
+  console.log("Best block:", bestBlock.id.slice(0, 18));
 
   // Tạo một instance transaction dựa trên bestblock, genesisblock và clause
   const transaction = new Transaction({
@@ -213,4 +211,77 @@ const decodeFarmData = async (req, res) => {
   }
 };
 
-module.exports = { createTransaction, getBlockByTxId, decodeFarmData };
+async function deployContract(req, res) {
+  try {
+    const privateKey =
+      "daecfa21e37149ec2b37bea923adbbc2cbba8f8db8dca9b7fe52fcb4b31ad630";
+
+    // Create a wallet from the private key
+    const wallet = new ethers.Wallet(privateKey);
+
+    const thorClient = ThorClient.at("https://testnet.vechain.org/"); // Thay bằng URL cho testnet hoặc mainnet
+    const deployerAccount = {
+      privateKey: privateKey,
+      address: wallet.address,
+    };
+    const proxyAccount = {
+      privateKey: privateKey,
+      address: wallet.address,
+    };
+    const owner = {
+      privateKey: privateKey,
+      address: wallet.address,
+    };
+    console.log("Deployer account:", 11);
+    const provider = new VeChainProvider(
+      thorClient,
+      new ProviderInternalBaseWallet([deployerAccount, proxyAccount, owner], {
+        gasPayer: {
+          gasPayerServiceUrl: "https://sponsor-testnet.vechain.energy/by/819",
+        },
+      }),
+      true
+    );
+
+    const signer = await provider.getSigner(deployerAccount.address);
+    console.log("Deployer account:", 22);
+
+    const setupERC20Contract = async () => {
+      const contractFactory = thorClient.contracts.createContractFactory(
+        abi,
+        bytecode,
+        signer
+      );
+      console.log("Deployer account:", 33);
+
+      // Bắt đầu triển khai hợp đồng
+      await contractFactory.startDeployment();
+      console.log("Deployer account:", 4444);
+
+      // Đợi cho đến khi hợp đồng được triển khai
+      return await contractFactory.waitForDeployment();
+      console.log("Deployer account:", 555);
+    };
+
+    // Triển khai hợp đồng ERC20 và lấy địa chỉ hợp đồng
+    const contract = await setupERC20Contract();
+    return {
+      status: 200,
+      message: "Contract deployed successfully",
+      contractAddress: contract.address,
+    };
+  } catch (error) {
+    return {
+      status: 500,
+      message: error.message,
+      error: error.message,
+    };
+  }
+}
+
+module.exports = {
+  createTransaction,
+  getBlockByTxId,
+  decodeFarmData,
+  deployContract,
+};
