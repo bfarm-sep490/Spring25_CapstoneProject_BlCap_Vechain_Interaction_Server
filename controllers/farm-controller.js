@@ -210,57 +210,60 @@ const decodeFarmData = async (req, res) => {
     };
   }
 };
-
+// Tự deploy contract bằng code (Thông thường cái này sẽ là web3)
 async function deployContract(req, res) {
   try {
+    // Địa chỉ ví của người dùng (có thể là ví của máy chủ hoặc ví của người dùng)
+    // Ở đây là ví của máy chủ server
     const privateKey =
       "daecfa21e37149ec2b37bea923adbbc2cbba8f8db8dca9b7fe52fcb4b31ad630";
 
-    // Create a wallet from the private key
     const wallet = new ethers.Wallet(privateKey);
-
+    // Tạo một instance của VeChainProvider và ThorClient (Đây là thư viện SDK của VeChain)
     const thorClient = ThorClient.at("https://testnet.vechain.org/"); // Thay bằng URL cho testnet hoặc mainnet
+    // Đây là account của developer deploy
     const deployerAccount = {
       privateKey: privateKey,
       address: wallet.address,
     };
+    // Đây là account người proxy máy chủ
     const proxyAccount = {
       privateKey: privateKey,
       address: wallet.address,
     };
+    // Đây là account owner của contract (có thể là ví của người dùng hoặc ví của máy chủ)
     const owner = {
       privateKey: privateKey,
       address: wallet.address,
     };
-    console.log("Deployer account:", 11);
+    // Ở đây ta tạo 3 địa chỉ này cùng 1 chỗ vì chúng ta tự deploy contract và proxy cho đồ án (ở đây là máy chủ server)
     const provider = new VeChainProvider(
       thorClient,
       new ProviderInternalBaseWallet([deployerAccount, proxyAccount, owner], {
         gasPayer: {
           gasPayerServiceUrl: "https://sponsor-testnet.vechain.energy/by/819",
+          // Địa chỉ của nhà tài trợ gas (ở đây là máy chủ server)
         },
       }),
       true
     );
-
+    // Lấy người ký hợp đồng tạo contract (ở đây là máy chủ server)
     const signer = await provider.getSigner(deployerAccount.address);
-    console.log("Deployer account:", 22);
 
     const setupERC20Contract = async () => {
+      // Tạo một instance của contract factory với ABI và bytecode của hợp đồng ERC20
+      // Tạo contract factory từ abi và bytecode của smart contract
       const contractFactory = thorClient.contracts.createContractFactory(
-        abi,
-        bytecode,
-        signer
+        abi, // ABI của smart contract (dạng interface của smart contract)
+        bytecode, // bytecode của smart contract (dạng mã nhị phân của smart contract)
+        signer // Địa chỉ của người ký hợp đồng (ở đây là máy chủ server)
       );
-      console.log("Deployer account:", 33);
 
       // Bắt đầu triển khai hợp đồng
       await contractFactory.startDeployment();
-      console.log("Deployer account:", 4444);
 
       // Đợi cho đến khi hợp đồng được triển khai
       return await contractFactory.waitForDeployment();
-      console.log("Deployer account:", 555);
     };
 
     // Triển khai hợp đồng ERC20 và lấy địa chỉ hợp đồng
@@ -268,7 +271,7 @@ async function deployContract(req, res) {
     return {
       status: 200,
       message: "Contract deployed successfully",
-      contractAddress: contract.address,
+      contractAddress: contract.address, // Địa chỉ của hợp đồng sau khi triển khai
     };
   } catch (error) {
     return {
