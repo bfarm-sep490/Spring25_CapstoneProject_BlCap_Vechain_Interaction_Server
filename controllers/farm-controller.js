@@ -1,240 +1,72 @@
-const { ethers } = require("ethers");
-const { Transaction, cry } = require("thor-devkit");
-const bent = require("bent");
+import CryptoJS from "crypto-js";
 
-const { address, abi, bytecode } = require("../models/farm-contract");
-const {
+import { abi, bytecode } from "../models/farm-contract.js";
+import {
   ThorClient,
   VeChainProvider,
   ProviderInternalBaseWallet,
-} = require("@vechain/sdk-network");
-const { HexUInt } = require("@vechain/sdk-core");
+  signerUtils,
+} from "@vechain/sdk-network";
 
-async function createTransaction(req, res) {
-  // Thiết lập engine gọi http request để giao tiếp với Vechaine
-  const get = bent("GET", "https://testnet.veblocks.net", "json");
-  const post = bent("POST", "https://testnet.veblocks.net", "json");
-  const getSponsorship = bent(
-    "POST",
-    "https://sponsor-testnet.vechain.energy",
-    "json"
-  );
+import {
+  ABIFunction,
+  Address,
+  Clause,
+  ABIContract,
+  HexUInt,
+  Secp256k1,
+  Transaction,
+} from "@vechain/sdk-core";
+import { ethers } from "ethers";
 
-  // Tạo một ví ngẫu nhiên hoặc có thể sử dụng ví của server
-  // hoặc sử dụng  ví của người dùng (tùy use case phát triển)
-  const wallet = ethers.Wallet.createRandom();
+const thor = ThorClient.at("https://testnet.vechain.org/");
+const senderPrivateKey =
+  "daecfa21e37149ec2b37bea923adbbc2cbba8f8db8dca9b7fe52fcb4b31ad630";
+const senderAddress = Address.ofPrivateKey(senderPrivateKey).toString();
 
-  // Tạo nên engine gọi hàm của smart contract
-  // Tạo interface từ abi của smart contract
-  const { Interface } = ethers;
-  const Counter = new Interface(abi);
-  // Tạo data để gọi hàm registerFarm của smart contract (Tạo nội dung của cuộc "giao dịch" )
-  const encodedData = Counter.encodeFunctionData("createPlan", [
-    1,
-    1, // uint256 for yield_id
-    1, // uint256 for expert_id
-    "1", // string for plan_name
-    1, // uint256 for start_date
-    1, // uint256 for end_date (convert directly to BigInteger)
-    1, // uint256 for estimated_product
-    "1",
-  ]);
-
-  // Tạo clause để gọi hàm registerFarm của smart contract (Tạo nội dung của cuộc "giao dịch" )
-  const clauses = [
-    {
-      to: address, // Địa chỉ của smart contract
-      value: "0x0", // Giá trị đầu của địa chỉ
-      data: encodedData, // hàm gọi của smart contract
-    },
-  ];
-
-  // Lấy thông tin block mới nhất và block genesis
-  const bestBlock = await get("/blocks/best"); // Lấy thông tin của block mới nhất trên mạng testnet của Vechain
-  const genesisBlock = await get("/blocks/0"); // Lấy thông tin của block đầu tiên trên mạng testnet của Vechain
-  console.log("Best block:", Number.parseInt(genesisBlock.id.slice(-2), 16));
-  console.log("Best block:", bestBlock.id.slice(0, 18));
-
-  // Tạo một instance transaction dựa trên bestblock, genesisblock và clause
-  const transaction = new Transaction({
-    chainTag: Number.parseInt(genesisBlock.id.slice(-2), 16),
-    //chainTag là mã xác định mạng lưới mà giao dịch sẽ được thực hiện. Ở đây xác định mạng lưới testnet của Vechain thông
-    //qua 2 số cuối của mã xác định của block genesis (block đầu tiên của mạng lưới testnet của Vechain)
-    blockRef: bestBlock.id.slice(0, 18),
-    //blockRef tham chiểu đến block mới nhất của mạng lưới testnet của Vechain
-    //mục đích của blockRef là đảm bảo rằng giao dịch được thực hiện dựa trên trạng thái hiện tại của blockchain.
-    expiration: 32,
-    //expiration xác định số lượng block mà giao dịch có thể tồn tại trước khi hết hạn.
-    clauses,
-    //clauses là danh sách các nội dung, hành động sẽ được thực hiện trong giao dịch.
-    gas: bestBlock.gasLimit,
-    //gas xác định mức tiêu thụ tài nguyên tối đa cho giao dịch. Ở đây giới hạn trong block mới nhất
-    gasPriceCoef: 0,
-    //gasPriceCoef là hệ số giá gas (gas price coefficient).
-    dependsOn: null,
-    //dependsOn chỉ định ID của một giao dịch khác mà giao dịch hiện tại phụ thuộc vào.
-    nonce: Date.now(),
-    //nonce là một số duy nhất để đảm bảo mỗi giao dịch chỉ được gửi một lần.
-    //Ở đây, giá trị nonce được tạo dựa trên thời gian hiện tại (Date.now())
-    reserved: {
-      //reserved là trường dành riêng cho các tính năng đặc biệt trong tương lai.
-      //Giá trị 1 kích hoạt các tính năng nâng cao (như giao dịch ủy quyền).
-      features: 1,
-    },
-  });
-
-  // Kiểm tra xem giao dịch có thể thực hiện hay không
-  const tests = await post("/accounts/*", {
-    // Đây là API kiểm tra giao dịch có thể thực hiện hay không (Không thực hiện giao dịch)
-    clauses: transaction.body.clauses, //clauses là danh sách các nội dung, hành động sẽ được thực hiện trong giao dịch.
-    caller: wallet.address, // là địa chỉ ví của người dùng. Ở đây là máy chủ server
-    gas: transaction.body.gas, // là phí gas cần trả (được tính toán bằng instance transaction)
-  });
-  //tests sẽ là nội dung bộ kiểm tra để kiểm tra xem giao dịch có thể thực hiện hay không
-  // Kiểm tra xem giao dịch có bị revert hay không trong bộ tests đã kiểm tra
-  for (const test of tests) {
-    if (test.reverted) {
-      //test.reverted là trạng thái từ chối giao dịch.
-
-      const revertReason =
-        test.data.length > 10
-          ? ethers.AbiCoder.defaultAbiCoder().decode(
-              ["string"],
-              `0x${test.data.slice(10)}`
-            )
-          : test.vmError;
-      throw new Error(revertReason); // giải mã lỗi từ chối giao dịch
-    }
-  }
-
-  //Đây là API lấy chữ kí của "nhà tài trợ" cho giao dịch.
-  //Ở đây là máy chủ server của dự án
-  const { signature } = await getSponsorship(`/by/819`, {
-    origin: wallet.address, // thay bằng ví của người dùng. Ở đây có thể thay thế ví của máy chủ để quản lí giao dịch.
-    raw: `0x${transaction.encode().toString("hex")}`, // Giao dịch đã mã hóa. Bản giao dịch sẽ được gửi đến cho "nhà tài trợ" ký
-  });
-  //signature là chữ kí phản hồi từ nhà tài trợ cho giao dịch.
-  const sponsorSignature = Buffer.from(signature.substr(2), "hex");
-
-  // Tạo chữ kí nngười dùng. Ở đây là máy chủ hiện tại.
-  const signingHash = transaction.signingHash(); // Lấy mã hash của giao dịch. mã hash này sẽ được làm nhiên liệu để sinh chữ kí của người dùng.
-  // Lấy chữ kí từ người dùng.
-  const originSignature = cry.secp256k1.sign(
-    signingHash, // Mã hash của giao dịch
-    Buffer.from(wallet.privateKey.slice(2), "hex") // chuyển đổi key wallet người dùng. Ở đây là máy chủ server từ hex sang buffer
-  ); //originSignature là chữ kí người dùng đồng ý giao dịch.
-
-  //kết hợp chữ kí người dùng và chữ kí nhà tài trợ. Phí gas sẽ là nhà tài trợ chịu trách nhiệm. Người kí là người chứng thực giao dịch.
-  transaction.signature = Buffer.concat([originSignature, sponsorSignature]);
-  //transaction.signature là chữ kí cuối cùng của giao dịch. Được tạo từ chữ kí của người dùng và chữ kí của nhà tài trợ.
-
-  // Gửi giao dịch lên mạng testnet của Vechain
-  const rawTransaction = `0x${transaction.encode().toString("hex")}`;
-  const { id } = await post("/transactions", { raw: rawTransaction });
-  console.log("Submitted with txId", id);
-
-  return {
-    status: 200,
-    message: "Transaction submitted",
-    txId: id,
-  };
-}
-
-// Hàm lấy thông tin block và transactioon thông tin từ Vechain bằng transaction txId xuống.
-async function getBlockByTxId(req, res) {
-  const txId = req.params.id;
-  const baseUrl = `https://testnet.veblocks.net`;
-
-  const get = bent("GET", "json");
-  console.log("AAAAs");
-  try {
-    const transactionDetails = await get(`${baseUrl}/transactions/${txId}`);
-    const blockId = transactionDetails.meta.blockID;
-    const blockDetails = await get(`${baseUrl}/blocks/${blockId}`);
-
-    return {
-      status: 200,
-      message: "Block information fetched successfully",
-      data: {
-        blockDetails,
-        transactionDetails,
+const provider = new VeChainProvider(
+  thor,
+  new ProviderInternalBaseWallet(
+    [
+      {
+        privateKey: senderPrivateKey,
+        address: senderAddress,
       },
-    };
-  } catch (error) {
-    console.error("Error fetching block information:", error);
-    return {
-      status: 500,
-      message: "Unable to fetch block information",
-      error: error.message,
-    };
-  }
-}
-
-// Hàm decode thông tin farm từ function registerFarm từ Vechain xuống bằng transaction txId.
-const decodeFarmData = async (req, res) => {
-  const txId = req.params.id;
-  const baseUrl = `https://testnet.veblocks.net`;
-  const get = bent("GET", "json");
-
-  try {
-    const transactionDetails = await get(`${baseUrl}/transactions/${txId}`);
-
-    const { data } = transactionDetails.clauses[0];
-    const { Interface } = ethers;
-    const iface = new Interface(abi);
-    console.log("Data from transaction:");
-
-    const decodedData = iface.decodeFunctionData("createPlan", data);
-    console.log(decodedData);
-
-    const farmInfo = {
-      yield_id: decodedData.yield_id.toString(),
-      expert_id: decodedData.expert_id.toString(),
-      plan_name: decodedData.plan_name,
-      start_date: decodedData.start_date.toString(),
-      end_date: decodedData.end_date.toString(),
-      estimated_product: decodedData.estimated_product.toString(),
-    };
-
-    return {
-      status: 200,
-      message: "Farm data decoded successfully",
-      data: farmInfo,
-    };
-  } catch (error) {
-    console.error("Error decoding farm data:", error.message);
-    return {
-      status: 500,
-      message: "Unable to decode farm data",
-      error: error.message,
-    };
-  }
-};
+    ],
+    {
+      gasPayer: {
+        gasPayerServiceUrl: `https://sponsor-testnet.vechain.energy/by/819`,
+      },
+    }
+  ),
+  true // fee delegation enabled
+);
+const contractAddress = "0xca8c538523cac1e6eddc5b5b912eb6e00a7cd683";
 // Tự deploy contract bằng code (Thông thường cái này sẽ là web3)
-async function deployContract(req, res) {
+async function deployAPlanContract(req, res) {
   try {
     // Địa chỉ ví của người dùng (có thể là ví của máy chủ hoặc ví của người dùng)
     // Ở đây là ví của máy chủ server
     const privateKey =
       "daecfa21e37149ec2b37bea923adbbc2cbba8f8db8dca9b7fe52fcb4b31ad630";
 
-    const wallet = new ethers.Wallet(privateKey);
+    const address = Address.ofPrivateKey(senderPrivateKey).toString();
     // Tạo một instance của VeChainProvider và ThorClient (Đây là thư viện SDK của VeChain)
     const thorClient = ThorClient.at("https://testnet.vechain.org/"); // Thay bằng URL cho testnet hoặc mainnet
     // Đây là account của developer deploy
     const deployerAccount = {
       privateKey: privateKey,
-      address: wallet.address,
+      address: address,
     };
     // Đây là account người proxy máy chủ
     const proxyAccount = {
       privateKey: privateKey,
-      address: wallet.address,
+      address: address,
     };
     // Đây là account owner của contract (có thể là ví của người dùng hoặc ví của máy chủ)
     const owner = {
       privateKey: privateKey,
-      address: wallet.address,
+      address: address,
     };
     // Ở đây ta tạo 3 địa chỉ này cùng 1 chỗ vì chúng ta tự deploy contract và proxy cho đồ án (ở đây là máy chủ server)
     const provider = new VeChainProvider(
@@ -282,9 +114,280 @@ async function deployContract(req, res) {
   }
 }
 
-module.exports = {
-  createTransaction,
-  getBlockByTxId,
-  decodeFarmData,
-  deployContract,
+const createdPlan = async (req, res) => {
+  try {
+    const { status, messsage, contractAddress } = await deployAPlanContract(
+      req,
+      res
+    );
+
+    const {
+      _planId,
+      _plantId,
+      _yieldId,
+      _expertId,
+      _planName,
+      _startDate,
+      _endDate,
+      _estimatedProduct,
+      _estimatedUnit,
+      _status,
+    } = req.body;
+
+    const clause = Clause.callFunction(
+      Address.of(contractAddress),
+      ABIContract.ofAbi(abi).getFunction("createPlan"),
+      [
+        _planId,
+        _plantId,
+        _yieldId,
+        _expertId,
+        _planName,
+        _startDate,
+        _endDate,
+        _estimatedProduct,
+        _estimatedUnit,
+        _status,
+      ]
+    );
+
+    // ⛽ Estimate gas
+    const gas = await thor.gas.estimateGas([clause]);
+
+    // 🧱 Build tx (trả về đúng format TransactionRequestInput)
+    const txBody = await thor.transactions.buildTransactionBody(
+      [clause],
+      gas.totalGas,
+      {
+        isDelegated: true,
+      }
+    );
+
+    // ✍️ Sign transaction
+    const signer = await provider.getSigner(senderAddress);
+    const rawSignedTx = await signer.signTransaction(txBody);
+
+    const signedTx = Transaction.decode(HexUInt.of(rawSignedTx).bytes, true);
+    console.log(signedTx);
+
+    const sendTransactionResult = await thor.transactions.sendTransaction(
+      signedTx
+    );
+
+    const txReceipt = await thor.transactions.waitForTransaction(
+      sendTransactionResult.id
+    );
+    console.log("✅ Transaction sent:", txReceipt);
+
+    return {
+      status: 200,
+      message: "Transaction created successfully",
+      data: {
+        contractAddress: contractAddress,
+        txReceipt: txReceipt,
+      },
+    };
+  } catch (error) {
+    console.error("❌ Transaction failed:", error.message);
+    return {
+      status: 500,
+      message: "Transaction failed",
+      error: error.message,
+    };
+  }
 };
+
+const createdTask = async (req, res) => {
+  try {
+    const { _taskId, _taskType, _status, _dataHash } = req.body;
+    const { contractAddress } = req.params;
+    const clause = Clause.callFunction(
+      Address.of(contractAddress),
+      ABIContract.ofAbi(abi).getFunction("addTaskMilestone"),
+      [_taskId, _taskType, _status, _dataHash]
+    );
+
+    // ⛽ Estimate gas
+    const gas = await thor.gas.estimateGas([clause]);
+
+    // 🧱 Build tx (trả về đúng format TransactionRequestInput)
+    const txBody = await thor.transactions.buildTransactionBody(
+      [clause],
+      gas.totalGas,
+      {
+        isDelegated: true,
+      }
+    );
+
+    // ✍️ Sign transaction
+    const signer = await provider.getSigner(senderAddress);
+    const rawSignedTx = await signer.signTransaction(txBody);
+
+    const signedTx = Transaction.decode(HexUInt.of(rawSignedTx).bytes, true);
+    console.log(signedTx);
+
+    const sendTransactionResult = await thor.transactions.sendTransaction(
+      signedTx
+    );
+
+    const txReceipt = await thor.transactions.waitForTransaction(
+      sendTransactionResult.id
+    );
+    console.log("✅ Transaction sent:", txReceipt);
+
+    return {
+      status: 200,
+      message: "Transaction created successfully",
+      data: txReceipt,
+    };
+  } catch (error) {
+    console.error("❌ Transaction failed:", error.message);
+    return {
+      status: 500,
+      message: "Transaction failed",
+      error: error.message,
+    };
+  }
+};
+export const getContractTransactions = async (req, res) => {
+  try {
+    const { contractAddress } = req.params;
+    const planInfo = await thor.contracts.executeCall(
+      contractAddress,
+      ABIContract.ofAbi(abi).getFunction("getPlanInfo"),
+      []
+    );
+    console.log("planInfo", planInfo.result.plain?.[0]);
+    return {
+      status: 200,
+      message: "Fetched Plans successfully",
+      data: formatPlanInfo(planInfo.result.plain),
+    };
+  } catch (err) {
+    console.error("Error fetching events:", err);
+    return {
+      status: 500,
+      message: "Error fetching events",
+      error: err.message,
+    };
+  }
+};
+export { createdPlan, createdTask };
+
+function formatPlanInfo(planInfo) {
+  if (!Array.isArray(planInfo) || planInfo.length !== 3) {
+    throw new Error("Invalid planInfo structure");
+  }
+
+  const [planData, taskList, inspectionList] = planInfo;
+
+  return {
+    plan: {
+      planId: Number(planData.planId),
+      plantId: Number(planData.plantId),
+      yieldId: Number(planData.yieldId),
+      expertId: Number(planData.expertId),
+      planName: planData.planName,
+      startDate: Number(planData.startDate),
+      endDate: Number(planData.endDate),
+      estimatedProduct: Number(planData.estimatedProduct),
+      estimatedUnit: planData.estimatedUnit,
+      status: planData.status,
+    },
+    taskMilestones: taskList.map((task) => ({
+      taskId: Number(task.taskId),
+      taskType: task.taskType,
+      timestamp: Number(task.timestamp),
+      status: task.status,
+      dataHash: task.dataHash,
+    })),
+    inspectionMilestones: inspectionList.map((inspection) => ({
+      inspectionId: Number(inspection.inspectionId),
+      timestamp: Number(inspection.timestamp),
+      inspectionType: Number(inspection.inspectionType),
+      dataHash: inspection.dataHash,
+    })),
+  };
+}
+
+const secretKey = "mySecretKey123"; // Đối với mã hóa AES, bạn cần lưu ý sử dụng AES thủ công hoặc thư viện tương ứng
+
+function serialize(data) {
+  // Xử lý fertilizer array → chuỗi: id:name:quantity,...
+  const fert = (data.fertilizer || [])
+    .map((f) => `${f.id}:${f.name}:${f.quantity}`)
+    .join(",");
+
+  // Xử lý pesticide array → chuỗi: id:name:quantity,...
+  const pest = (data.pesticide || [])
+    .map((p) => `${p.id}:${p.name}:${p.quantity}`)
+    .join(",");
+
+  // Nối toàn bộ thành 1 chuỗi ngắn, phân cách bằng dấu |
+  const result = `${fert}|${pest}|${data.harvested_quantity}|${data.packaged_quantity}|${data.packaged_unit}`;
+
+  return result;
+}
+
+export function deserialize(serialized) {
+  const [fertStr, pestStr, hQty, pQty, pUnit] = serialized.split("|");
+
+  const fertilizer = fertStr
+    .split(",")
+    .filter(Boolean)
+    .map((item) => {
+      const [id, name, quantity] = item.split(":");
+      return { id: parseInt(id), name, quantity: parseFloat(quantity) };
+    });
+
+  const pesticide = pestStr
+    .split(",")
+    .filter(Boolean)
+    .map((item) => {
+      const [id, name, quantity] = item.split(":");
+      return { id: parseInt(id), name, quantity: parseFloat(quantity) };
+    });
+
+  return {
+    fertilizer,
+    pesticide,
+    harvested_quantity: parseFloat(hQty),
+    packaged_quantity: parseFloat(pQty),
+    packaged_unit: pUnit,
+  };
+}
+
+// 🔐 Mã hóa thành bytes32 (sử dụng ethers.js)
+export function encryptToBytes32(dataString) {
+  // Serialize dữ liệu thành chuỗi
+  const serializedData = serialize(dataString);
+
+  // Mã hóa dữ liệu thành bytes32
+  const bytes = ethers.encodeBytes32String(serializedData); // Chuyển thành bytes
+
+  return bytes; // trả về bytes32
+}
+
+// 🔓 Giải mã từ bytes32 (dùng ethers.js)
+export function decryptFromBytes32(bytes32Hex) {
+  // Convert bytes32 to bytes
+  const bytes = ethers.utils.arrayify(bytes32Hex); // Chuyển đổi từ bytes32 (hex) thành mảng bytes
+
+  // Chuyển bytes về lại chuỗi
+  const decrypted = ethers.utils.toUtf8String(bytes);
+
+  return decrypted;
+}
+const input = {
+  fertilizer: [{ id: 1, name: "NPK", quantity: 20 }],
+  pesticide: [{ id: 1, name: "Biotrine", quantity: 5 }],
+  harvested_quantity: 500,
+  packaged_quantity: 300,
+  packaged_unit: "kg",
+};
+
+const bytes32Value = encryptToBytes32(input);
+console.log("Encrypted bytes32:", bytes32Value);
+
+const decryptedData = decryptFromBytes32(bytes32Value);
+console.log("Decrypted data:", decryptedData);

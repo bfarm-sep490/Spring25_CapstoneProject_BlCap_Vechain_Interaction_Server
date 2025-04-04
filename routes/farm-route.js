@@ -1,22 +1,24 @@
 const express = require("express");
 const {
-  deployContract,
-  createTransaction,
-  getBlockByTxId,
-  decodeFarmData,
+  getContractTransactions,
+  createdPlan,
+  deserialize,
+  decryptFromBytes32,
+  encryptToBytes32,
+  createdTask,
 } = require("../controllers/farm-controller");
 const jwtAuthMiddleware = require("../middlewares/jwt-middleware");
 
 const router = express.Router();
 
-router.post("/vechain/farm/register", async (req, res) => {
+router.post("/vechain/contracts/plans", async (req, res) => {
   try {
-    const result = await createTransaction(req, res);
+    const { status, message, data } = await createdPlan(req, res);
 
     res.status(200).json({
       status: 200,
-      message: result.message || "Transaction submitted successfully",
-      txId: result.txId || null,
+      message: message || "Transaction submitted successfully",
+      txId: data || null,
     });
   } catch (error) {
     console.error("Error in /vechain/farm-register:", error);
@@ -29,18 +31,36 @@ router.post("/vechain/farm/register", async (req, res) => {
   }
 });
 
-router.get("/vechain/farm/:id", async (req, res) => {
+router.post("/vechain/contracts/:contractAddress/task", async (req, res) => {
   try {
-    const txId = req.params.id;
-    const result = await decodeFarmData(req, res);
+    const { status, message, data } = await createdTask(req, res);
+
+    res.status(200).json({
+      status: 200,
+      message: message || "Transaction submitted successfully",
+      txId: data || null,
+    });
+  } catch (error) {
+    console.error("Error in /vechain/farm-register:", error);
+
+    res.status(500).json({
+      status: 500,
+      message: "Transaction failed",
+      error: error.message,
+    });
+  }
+});
+
+router.get("/vechain/contracts/plans/:contractAddress", async (req, res) => {
+  try {
+    const result = await getContractTransactions(req, res);
+    console.log("result", result);
     res.status(200).json({
       status: 200,
       message: result?.message || "Transaction gotten successfully",
       data: result?.data || null,
     });
   } catch (error) {
-    console.error("Error in /vechain/farm/:id", error);
-
     res.status(500).json({
       status: 500,
       message: "Transaction gotten failed",
@@ -48,43 +68,33 @@ router.get("/vechain/farm/:id", async (req, res) => {
     });
   }
 });
-
-router.get("/vechain/transaction/:id", async (req, res) => {
+router.post("/encrypt", (req, res) => {
   try {
-    const txId = req.params.id;
-    const result = await getBlockByTxId(req, res);
-    res.status(200).json({
-      status: 200,
-      message: result?.message || "Transaction gotten successfully",
-      data: result?.data || null,
+    const serialized = req.body;
+    const bytes = encryptToBytes32(serialized.toString());
+    res.json({
+      bytes,
+      originalData: req.body,
+      serialized,
     });
-  } catch (error) {
-    console.error("Error in /vechain/farm/:id", error);
-
-    res.status(500).json({
-      status: 500,
-      message: "Transaction gotten failed",
-      error: error.message,
-    });
+  } catch (err) {
+    res.status(500).json({ error: "Encryption failed", detail: err.message });
   }
 });
 
-router.get("/vechain/deploy", async (req, res) => {
+// ✅ Controller 2: Giải mã
+router.post("/decrypt", (req, res) => {
   try {
-    const result = await deployContract();
-    res.status(200).json({
-      status: 200,
-      message: result?.message || "Transaction gotten successfully",
-      data: result?.contractAddress || null,
+    const { bytes32 } = req.body;
+    console.log("bytes32", bytes32);
+    const decryptedString = decryptFromBytes32(bytes32);
+    const parsed = deserialize(decryptedString);
+    res.json({
+      decryptedString,
+      parsedData: parsed,
     });
-  } catch (error) {
-    console.error("Error in /vechain/farm/:id", error);
-
-    res.status(500).json({
-      status: 500,
-      message: "Transaction gotten failed",
-      error: error.message,
-    });
+  } catch (err) {
+    res.status(500).json({ error: "Decryption failed", detail: err.message });
   }
 });
 module.exports = router;
