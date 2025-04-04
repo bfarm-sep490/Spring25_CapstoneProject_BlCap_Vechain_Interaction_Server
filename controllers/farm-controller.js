@@ -17,7 +17,6 @@ import {
   Secp256k1,
   Transaction,
 } from "@vechain/sdk-core";
-import { ethers } from "ethers";
 
 const thor = ThorClient.at("https://testnet.vechain.org/");
 const senderPrivateKey =
@@ -309,85 +308,3 @@ function formatPlanInfo(planInfo) {
     })),
   };
 }
-
-const secretKey = "mySecretKey123"; // Đối với mã hóa AES, bạn cần lưu ý sử dụng AES thủ công hoặc thư viện tương ứng
-
-function serialize(data) {
-  // Xử lý fertilizer array → chuỗi: id:name:quantity,...
-  const fert = (data.fertilizer || [])
-    .map((f) => `${f.id}:${f.name}:${f.quantity}`)
-    .join(",");
-
-  // Xử lý pesticide array → chuỗi: id:name:quantity,...
-  const pest = (data.pesticide || [])
-    .map((p) => `${p.id}:${p.name}:${p.quantity}`)
-    .join(",");
-
-  // Nối toàn bộ thành 1 chuỗi ngắn, phân cách bằng dấu |
-  const result = `${fert}|${pest}|${data.harvested_quantity}|${data.packaged_quantity}|${data.packaged_unit}`;
-
-  return result;
-}
-
-export function deserialize(serialized) {
-  const [fertStr, pestStr, hQty, pQty, pUnit] = serialized.split("|");
-
-  const fertilizer = fertStr
-    .split(",")
-    .filter(Boolean)
-    .map((item) => {
-      const [id, name, quantity] = item.split(":");
-      return { id: parseInt(id), name, quantity: parseFloat(quantity) };
-    });
-
-  const pesticide = pestStr
-    .split(",")
-    .filter(Boolean)
-    .map((item) => {
-      const [id, name, quantity] = item.split(":");
-      return { id: parseInt(id), name, quantity: parseFloat(quantity) };
-    });
-
-  return {
-    fertilizer,
-    pesticide,
-    harvested_quantity: parseFloat(hQty),
-    packaged_quantity: parseFloat(pQty),
-    packaged_unit: pUnit,
-  };
-}
-
-// 🔐 Mã hóa thành bytes32 (sử dụng ethers.js)
-export function encryptToBytes32(dataString) {
-  // Serialize dữ liệu thành chuỗi
-  const serializedData = serialize(dataString);
-
-  // Mã hóa dữ liệu thành bytes32
-  const bytes = ethers.encodeBytes32String(serializedData); // Chuyển thành bytes
-
-  return bytes; // trả về bytes32
-}
-
-// 🔓 Giải mã từ bytes32 (dùng ethers.js)
-export function decryptFromBytes32(bytes32Hex) {
-  // Convert bytes32 to bytes
-  const bytes = ethers.utils.arrayify(bytes32Hex); // Chuyển đổi từ bytes32 (hex) thành mảng bytes
-
-  // Chuyển bytes về lại chuỗi
-  const decrypted = ethers.utils.toUtf8String(bytes);
-
-  return decrypted;
-}
-const input = {
-  fertilizer: [{ id: 1, name: "NPK", quantity: 20 }],
-  pesticide: [{ id: 1, name: "Biotrine", quantity: 5 }],
-  harvested_quantity: 500,
-  packaged_quantity: 300,
-  packaged_unit: "kg",
-};
-
-const bytes32Value = encryptToBytes32(input);
-console.log("Encrypted bytes32:", bytes32Value);
-
-const decryptedData = decryptFromBytes32(bytes32Value);
-console.log("Decrypted data:", decryptedData);
