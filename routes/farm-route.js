@@ -3,6 +3,7 @@ const {
   getContractTransactions,
   createdPlan,
   createdTask,
+  createdInspect,
 } = require("../controllers/farm-controller");
 const jwtAuthMiddleware = require("../middlewares/jwt-middleware");
 
@@ -215,4 +216,23 @@ router.get("/vechain/contracts/plans/:contractAddress", async (req, res) => {
   }
 });
 
+
+router.post("/vechain/contracts/:contractAddress/inspect", async (req, res) => {
+  try {
+    const { status, message, data } = await createdInspect(req, res);
+
+    res.status(200).json({
+      status: 200,
+      message: message || "Transaction submitted successfully",
+      txId: data || null,
+    });
+  } catch (error) {
+    console.error("Error in /vechain/farm-register:", error);
+    res.status(500).json({
+      status: 500,
+      message: "Transaction failed",
+      error: error.message,
+    });
+  }
+});
 module.exports = router;

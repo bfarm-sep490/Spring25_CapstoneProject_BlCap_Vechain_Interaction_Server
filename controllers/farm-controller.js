@@ -198,12 +198,64 @@ const createdPlan = async (req, res) => {
 
 const createdTask = async (req, res) => {
   try {
-    const { _taskId, _taskType, _status, _dataHash } = req.body;
+    const { _taskId, _taskType, _status, _data } = req.body;
     const { contractAddress } = req.params;
     const clause = Clause.callFunction(
       Address.of(contractAddress),
       ABIContract.ofAbi(abi).getFunction("addTaskMilestone"),
-      [_taskId, _taskType, _status, _dataHash]
+      [_taskId, _taskType, _status, _data]
+    );
+
+    // ⛽ Estimate gas
+    const gas = await thor.gas.estimateGas([clause]);
+
+    // 🧱 Build tx (trả về đúng format TransactionRequestInput)
+    const txBody = await thor.transactions.buildTransactionBody(
+      [clause],
+      gas.totalGas,
+      {
+        isDelegated: true,
+      }
+    );
+
+    // ✍️ Sign transaction
+    const signer = await provider.getSigner(senderAddress);
+    const rawSignedTx = await signer.signTransaction(txBody);
+
+    const signedTx = Transaction.decode(HexUInt.of(rawSignedTx).bytes, true);
+    console.log(signedTx);
+
+    const sendTransactionResult = await thor.transactions.sendTransaction(
+      signedTx
+    );
+
+    const txReceipt = await thor.transactions.waitForTransaction(
+      sendTransactionResult.id
+    );
+    console.log("✅ Transaction sent:", txReceipt);
+
+    return {
+      status: 200,
+      message: "Transaction created successfully",
+      data: txReceipt,
+    };
+  } catch (error) {
+    console.error("❌ Transaction failed:", error.message);
+    return {
+      status: 500,
+      message: "Transaction failed",
+      error: error.message,
+    };
+  }
+};
+const createdInspect = async (req, res) => {
+  try {
+    const { _inspectionId, _inspectionType, _data} = req.body;
+    const { contractAddress } = req.params;
+    const clause = Clause.callFunction(
+      Address.of(contractAddress),
+      ABIContract.ofAbi(abi).getFunction("addInspectionMilestone"),
+      [_inspectionId, _inspectionType, _data]
     );
 
     // ⛽ Estimate gas
@@ -311,5 +363,6 @@ function formatPlanInfo(planInfo) {
 module.exports = {
   createdPlan,
   createdTask,
-  getContractTransactions
+  getContractTransactions,
+  createdInspect
 };
