@@ -3,13 +3,15 @@ const FarmRouter = require("./routes/farm-route");
 const AuthenRouter = require("./routes/authen-route");
 const swaggerUi = require("swagger-ui-express");
 const swaggerSpecs = require("./swaggerConfig");
-const app = express();
 const cors = require("cors");
 const dotenv = require("dotenv");
 const PORT = 3000;
+
+const app = express();
+dotenv.config();
 app.use(cors());
 app.use(express.json());
-dotenv.config();
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
 app.get("/", (req, res) => {
   res.send("Hello, World! This is my Node.js server!");
 });

@@ -1,7 +1,8 @@
 const swaggerJsdoc = require("swagger-jsdoc");
+const swaggerUi = require('swagger-ui-express');
 
 const options = {
-  swaggerDefinition: {
+  definition: {
     openapi: "3.0.0",
     info: {
       title: "Vechain Interaction Server",
@@ -10,9 +11,13 @@ const options = {
     },
     servers: [
       {
+        url: "http://localhost:3000",
+        description: "Local Server",
+      },
+      {
         url: "https://ve-api.outfit4rent.online",
         description: "Development Server",
-      },
+      }
     ],
     components: {
       securitySchemes: {
