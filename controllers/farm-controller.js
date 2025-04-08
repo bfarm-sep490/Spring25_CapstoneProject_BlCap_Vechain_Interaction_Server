@@ -297,13 +297,13 @@ function formatPlanInfo(planInfo) {
       taskType: task.taskType,
       timestamp: Number(task.timestamp),
       status: task.status,
-      dataHash: task.dataHash,
+      data: task?.data,
     })),
     inspectionMilestones: inspectionList.map((inspection) => ({
       inspectionId: Number(inspection.inspectionId),
       timestamp: Number(inspection.timestamp),
       inspectionType: Number(inspection.inspectionType),
-      dataHash: inspection.dataHash,
+      data: inspection?.data,
     })),
   };
 }
