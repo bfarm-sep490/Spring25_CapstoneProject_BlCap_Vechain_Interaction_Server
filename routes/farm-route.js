@@ -112,10 +112,24 @@ router.post("/vechain/contracts/plans", async (req, res) => {
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - _taskId
+ *               - _taskType
+ *               - _status
+ *               - _dataHash
  *             properties:
- *               taskName:
+ *               _taskId:
+ *                 type: integer
+ *                 example: 1
+ *               _taskType:
  *                 type: string
- *                 example: "Plant Trees"
+ *                 example: "Plant"
+ *               _status:
+ *                 type: string
+ *                 example: "Pending"
+ *               _dataHash:
+ *                 type: string
+ *                 example: "0xabc123...hash"
  *     responses:
  *       200:
  *         description: Transaction submitted successfully
@@ -144,9 +158,9 @@ router.post("/vechain/contracts/:contractAddress/task", async (req, res) => {
 
 /**
  * @swagger
- * /vechain/contracts/{contractAddress}/transactions:
+ * /vechain/contracts/plans/{contractAddress}:
  *   get:
- *     summary: Get transactions of a specific contract
+ *     summary: Get transaction history of a specific contract
  *     tags: [Farm]
  *     parameters:
  *       - in: path
@@ -154,26 +168,34 @@ router.post("/vechain/contracts/:contractAddress/task", async (req, res) => {
  *         required: true
  *         schema:
  *           type: string
- *         description: Contract address to fetch transactions for
+ *         description: The address of the contract to fetch transactions
  *     responses:
  *       200:
- *         description: A list of transactions
+ *         description: Successfully retrieved transactions
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 transactions:
+ *                 status:
+ *                   type: integer
+ *                   example: 200
+ *                 message:
+ *                   type: string
+ *                   example: Transaction gotten successfully
+ *                 data:
  *                   type: array
  *                   items:
  *                     type: object
  *                     properties:
  *                       txId:
  *                         type: string
+ *                         example: "0x123abc..."
  *                       status:
  *                         type: string
+ *                         example: "Success"
  *       500:
- *         description: Error retrieving transactions
+ *         description: Failed to retrieve transactions
  */
 router.get("/vechain/contracts/plans/:contractAddress", async (req, res) => {
   try {
