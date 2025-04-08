@@ -13,10 +13,8 @@ const options = {
     },
     servers: [
       {
-        url: isProd 
-          ? 'https://ve-api.outfit4rent.online' 
-          : 'http://localhost:3000',            
-        description: isProd ? 'Production Server' : 'Development Server',
+        url: 'https://ve-api.outfit4rent.online',            
+        description: 'Development Server',
       },
     ],
     components: {
