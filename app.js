@@ -15,7 +15,17 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
+app.get('/api-docs/swagger.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpecs);
+});
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs, {
+  swaggerOptions: {
+    url: 'https://ve-api.outfit4rent.online/api-docs/swagger.json', 
+  },
+}));
+
 app.get("/", (req, res) => {
   res.send("Hello, World! This is my Node.js server!");
 });

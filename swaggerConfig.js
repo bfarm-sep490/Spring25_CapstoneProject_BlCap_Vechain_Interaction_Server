@@ -1,8 +1,6 @@
 const swaggerJsdoc = require("swagger-jsdoc");
 const swaggerUi = require('swagger-ui-express');
 
-const isProd = process.env.NODE_ENV !== 'development';
-
 const options = {
   definition: {
     openapi: "3.0.0",
