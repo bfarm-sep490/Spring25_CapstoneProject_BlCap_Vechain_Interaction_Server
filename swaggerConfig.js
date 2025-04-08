@@ -11,10 +11,6 @@ const options = {
     },
     servers: [
       {
-        url: "http://outfit4rent.online:3000",
-        description: "Local Server",
-      },
-      {
         url: "https://ve-api.outfit4rent.online",
         description: "Development Server",
       }
@@ -22,7 +18,7 @@ const options = {
     components: {
       securitySchemes: {
         bearerAuth: {
-          type: "http",
+          type: "https",
           scheme: "bearer",
           bearerFormat: "JWT",
         },
