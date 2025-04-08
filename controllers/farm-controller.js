@@ -1,14 +1,14 @@
-import CryptoJS from "crypto-js";
+const CryptoJS = require("crypto-js");
 
-import { abi, bytecode } from "../models/farm-contract.js";
-import {
+const { abi, bytecode } = require("../models/farm-contract.js");
+const {
   ThorClient,
   VeChainProvider,
   ProviderInternalBaseWallet,
   signerUtils,
-} from "@vechain/sdk-network";
+} = require("@vechain/sdk-network");
 
-import {
+const {
   ABIFunction,
   Address,
   Clause,
@@ -16,7 +16,7 @@ import {
   HexUInt,
   Secp256k1,
   Transaction,
-} from "@vechain/sdk-core";
+} = require("@vechain/sdk-core");
 
 const thor = ThorClient.at("https://testnet.vechain.org/");
 const senderPrivateKey =
@@ -248,7 +248,7 @@ const createdTask = async (req, res) => {
     };
   }
 };
-export const getContractTransactions = async (req, res) => {
+const getContractTransactions = async (req, res) => {
   try {
     const { contractAddress } = req.params;
     const planInfo = await thor.contracts.executeCall(
@@ -271,7 +271,6 @@ export const getContractTransactions = async (req, res) => {
     };
   }
 };
-export { createdPlan, createdTask };
 
 function formatPlanInfo(planInfo) {
   if (!Array.isArray(planInfo) || planInfo.length !== 3) {
@@ -308,3 +307,9 @@ function formatPlanInfo(planInfo) {
     })),
   };
 }
+
+module.exports = {
+  createdPlan,
+  createdTask,
+  getContractTransactions
+};
