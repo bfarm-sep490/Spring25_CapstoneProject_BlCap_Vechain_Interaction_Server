@@ -21,12 +21,55 @@ const router = express.Router();
  *           schema:
  *             type: object
  *             properties:
- *               planName:
+ *               _planId:
+ *                 type: integer
+ *                 example: 1
+ *               _plantId:
+ *                 type: integer
+ *                 example: 101
+ *               _yieldId:
+ *                 type: integer
+ *                 example: 201
+ *               _expertId:
+ *                 type: integer
+ *                 example: 301
+ *               _planName:
  *                 type: string
- *                 example: "My Farm Plan"
+ *                 example: "Summer Farm Plan"
+ *               _startDate:
+ *                 type: integer
+ *                 description: "Timestamp hoặc byteint"
+ *                 example: 1712544000
+ *               _endDate:
+ *                 type: integer
+ *                 description: "Timestamp hoặc byteint"
+ *                 example: 1715136000
+ *               _estimatedProduct:
+ *                 type: integer
+ *                 example: 1000
+ *               _estimatedUnit:
+ *                 type: string
+ *                 example: "Kg"
+ *               _status:
+ *                 type: string
+ *                 example: "active"
  *     responses:
  *       200:
  *         description: Transaction submitted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: integer
+ *                   example: 200
+ *                 message:
+ *                   type: string
+ *                   example: Transaction submitted successfully
+ *                 txId:
+ *                   type: string
+ *                   example: "0xabc123..."
  *       500:
  *         description: Transaction failed
  */
