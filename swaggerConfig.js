@@ -11,7 +11,7 @@ const options = {
     },
     servers: [
       {
-        url: "http://localhost:3000",
+        url: "http://outfit4rent.online:3000",
         description: "Local Server",
       },
       {
