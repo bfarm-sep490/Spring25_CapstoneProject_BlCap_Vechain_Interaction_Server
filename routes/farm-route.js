@@ -202,16 +202,17 @@ router.get("/vechain/contracts/plans/:contractAddress", async (req, res) => {
   try {
     const result = await getContractTransactions(req, res);
     console.log("result", result);
-    if(res.status !=200) throw error(message);
+    if(result.status !=200) throw error(message);
     res.status(200).json({
       status: 200,
       message:"Transaction gotten successfully",
-      data: data,
+      data: result.data,
     });
   } catch (error) {
+    console.error("Error: ", error);
     res.status(500).json({
       status: 500,
-      message: "Transaction gotten failed",
+      message: error.message,
       data: null,
     });
   }
