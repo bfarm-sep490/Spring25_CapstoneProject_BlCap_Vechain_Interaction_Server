@@ -336,7 +336,7 @@ function formatPlanInfo(planInfo) {
       planId: Number(planData.planId),
       plantId: Number(planData.plantId),
       yieldId: Number(planData.yieldId),
-      expertId: Number(planData.expertId),
+      expertId: Number(planData.expertId), 
       planName: planData.planName,
       startDate: Number(planData.startDate),
       endDate: Number(planData.endDate),
@@ -354,7 +354,7 @@ function formatPlanInfo(planInfo) {
     inspectionMilestones: inspectionList.map((inspection) => ({
       inspectionId: Number(inspection.inspectionId),
       timestamp: Number(inspection.timestamp),
-      inspectionType: Number(inspection.inspectionType),
+      inspectionType: inspection.inspectionType,
       data: inspection?.data,
     })),
   };
