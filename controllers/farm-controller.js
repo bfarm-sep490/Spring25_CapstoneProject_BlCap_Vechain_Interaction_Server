@@ -119,7 +119,6 @@ const createdPlan = async (req, res) => {
       req,
       res
     );
-
     const {
       _planId,
       _plantId,
@@ -132,6 +131,7 @@ const createdPlan = async (req, res) => {
       _estimatedUnit,
       _status,
     } = req.body;
+    console.log(req);
 
     const clause = Clause.callFunction(
       Address.of(contractAddress),

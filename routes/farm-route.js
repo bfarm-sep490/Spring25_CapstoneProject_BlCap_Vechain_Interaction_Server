@@ -77,19 +77,18 @@ const router = express.Router();
 router.post("/vechain/contracts/plans", async (req, res) => {
   try {
     const { status, message, data } = await createdPlan(req, res);
-
+    if(status!=200){throw error(message)}
     res.status(200).json({
       status: 200,
-      message: message || "Transaction submitted successfully",
-      txId: data || null,
+      message:"Transaction submitted successfully",
+      data: data,
     });
   } catch (error) {
-    console.error("Error in /vechain/farm-register:", error);
-
+    console.error("Error: ", error);
     res.status(500).json({
       status: 500,
       message: "Transaction failed",
-      error: error.message,
+      data:null,
     });
   }
 });
@@ -140,19 +139,20 @@ router.post("/vechain/contracts/plans", async (req, res) => {
 router.post("/vechain/contracts/:contractAddress/task", async (req, res) => {
   try {
     const { status, message, data } = await createdTask(req, res);
-
+    if(status !=200) throw error(message);
     res.status(200).json({
       status: 200,
-      message: message || "Transaction submitted successfully",
-      txId: data || null,
+      message:"Transaction submitted successfully",
+      data: data,
     });
+  
   } catch (error) {
-    console.error("Error in /vechain/farm-register:", error);
+    console.error("Error: ", error);
 
     res.status(500).json({
       status: 500,
       message: "Transaction failed",
-      error: error.message,
+      data: null,
     });
   }
 });
@@ -202,16 +202,17 @@ router.get("/vechain/contracts/plans/:contractAddress", async (req, res) => {
   try {
     const result = await getContractTransactions(req, res);
     console.log("result", result);
+    if(res.status !=200) throw error(message);
     res.status(200).json({
       status: 200,
-      message: result?.message || "Transaction gotten successfully",
-      data: result?.data || null,
+      message:"Transaction gotten successfully",
+      data: data,
     });
   } catch (error) {
     res.status(500).json({
       status: 500,
       message: "Transaction gotten failed",
-      error: error.message,
+      data: null,
     });
   }
 });
@@ -220,18 +221,18 @@ router.get("/vechain/contracts/plans/:contractAddress", async (req, res) => {
 router.post("/vechain/contracts/:contractAddress/inspect", async (req, res) => {
   try {
     const { status, message, data } = await createdInspect(req, res);
-
+    if(status !=200) throw error(message);
     res.status(200).json({
       status: 200,
-      message: message || "Transaction submitted successfully",
-      txId: data || null,
+      message:"Transaction submitted successfully",
+      data: data ,
     });
   } catch (error) {
-    console.error("Error in /vechain/farm-register:", error);
+    console.error("Error: ", error);
     res.status(500).json({
       status: 500,
       message: "Transaction failed",
-      error: error.message,
+      data: null,
     });
   }
 });
